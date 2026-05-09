@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- ISO/IEC 27001: Implementación de Content Security Policy (CSP) para prevenir ataques XSS -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com https://www.gstatic.com;" />
+  <meta name="description"
+    content="AURA - Tecnología premium con propósito. Descubre nuestra colección seleccionada de productos tecnológicos." />
+  <meta property="og:title" content="AURA — Tecnología con Propósito" />
+  <meta property="og:description" content="Productos seleccionados para quienes valoran la calidad y el diseño." />
+  <meta property="og:type" content="website" />
+  <title>AURA — Tecnología con Propósito</title>
+
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/index.css" />
+  <link rel="stylesheet" href="css/assistant.css" />
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">AUR<span>A</span></div>
+    <div class="nav-links">
+      <a href="index.html">Tienda</a>
+      <a href="#" id="btnAbout">Nosotros</a>
+      <a href="admin.html">Admin</a>
+      <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+        <!-- Icon injected by JS -->
+      </button>
+      <button class="user-btn" id="userBtn" aria-label="Mi cuenta">
+        <span class="user-icon" id="userIconInner">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </span>
+        <span id="userBtnLabel">Mi cuenta</span>
+        <!-- User dropdown -->
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-header" id="userDropdownHeader">
+            <strong id="userDropdownName">Usuario</strong>
+            <span id="userDropdownEmail">email@example.com</span>
+          </div>
+          <button class="user-dropdown-item" id="btnMyOrders">📦 Mis Pedidos</button>
+          <button class="user-dropdown-item danger" id="btnUserLogout">Cerrar sesión</button>
+        </div>
+      </button>
+      <button class="cart-btn" aria-label="Ver carrito" id="cartBtn">
+        <span class="cart-icon"></span> Carrito <span class="cart-badge" id="cartCount">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main-content">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-left">
+        <p class="hero-tag">— Nueva colección 2025</p>
+        <h1 class="hero-title">Tecnología<br>con <em>propósito</em><br>y carácter</h1>
+        <p class="hero-desc">Productos seleccionados para quienes valoran la calidad, el diseño y la experiencia de uso
+          que marca la diferencia.</p>
+        <a href="#productos" class="hero-cta">Explorar colección <span>→</span></a>
+      </div>
+      <div class="hero-right">
+        <div class="hero-visual" aria-hidden="true">✦</div>
+        <div class="hero-stat">
+          <strong>6</strong>
+          <small>Productos premium</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="marquee-wrap">
+      <div class="marquee-track" id="marqueeTrack"></div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="features reveal" aria-label="Características de la tienda">
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">🚚</span>
+        <div class="feature-title">Envío gratuito</div>
+        <p class="feature-desc">En pedidos superiores a $80</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">🔄</span>
+        <div class="feature-title">30 días de garantía</div>
+        <p class="feature-desc">Devolución sin preguntas</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">🔒</span>
+        <div class="feature-title">Pago seguro</div>
+        <p class="feature-desc">Cifrado SSL en todo momento</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon" aria-hidden="true">💬</span>
+        <div class="feature-title">Soporte 24/7</div>
+        <p class="feature-desc">Siempre disponibles para ti</p>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section class="section reveal" id="productos">
+      <div class="section-header">
+        <div>
+          <p class="section-tag">— Catálogo</p>
+          <h2 class="section-title">Productos<br>seleccionados</h2>
+        </div>
+        <a href="#productos" class="view-all">Ver todos →</a>
+      </div>
+      <div class="products-grid" id="productsGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section reveal" id="reviews" style="background:var(--cream); padding: 4rem 5%; display: none;">
+      <div class="section-header">
+        <div>
+          <p class="section-tag">— Testimonios</p>
+          <h2 class="section-title">Lo que dicen<br>nuestros clientes</h2>
+        </div>
+      </div>
+      <div class="reviews-grid" id="reviewsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem;">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 3rem; margin-bottom: 3rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(0,0,0,0.05);">
+      <div>
+        <div class="footer-logo" style="margin-bottom: 1rem;">AUR<span>A</span></div>
+        <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.6;">Elevando tu estilo de vida a través de objetos con propósito y diseño minimalista.</p>
+      </div>
+      <div>
+        <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 1rem;">Enlaces</h4>
+        <div class="footer-links" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;">
+          <a href="#">Términos</a>
+          <a href="#">Privacidad</a>
+          <a href="admin.html">Admin</a>
+        </div>
+      </div>
+      <div id="suggestionBox">
+        <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 1rem;">Sugerencias</h4>
+        <form id="suggestionForm" style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <input type="text" id="sugName" placeholder="Tu nombre" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone);" required />
+          <input type="email" id="sugEmail" placeholder="Tu email" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone);" required />
+          <textarea id="sugMessage" placeholder="¿Cómo podemos mejorar?" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone); resize: none;" rows="2" required></textarea>
+          <button type="submit" style="padding: 0.6rem; background: var(--ink); color: white; border: none; border-radius: 2px; font-size: 0.75rem; cursor: pointer; transition: opacity 0.2s;">Enviar</button>
+        </form>
+      </div>
+    </div>
+    <p class="footer-copy">© 2025 AURA. Todos los derechos reservados.</p>
+  </footer>
+
+  <!-- CART PANEL -->
+  <div class="overlay" id="overlay"></div>
+  <div class="cart-panel" id="cartPanel" role="dialog" aria-labelledby="cartTitle" aria-modal="true">
+    <div class="cart-panel-header">
+      <h2 class="cart-panel-title" id="cartTitle">Tu carrito</h2>
+      <button class="close-panel" aria-label="Cerrar carrito">✕</button>
+    </div>
+    <div class="cart-items-wrap" id="cartItems" aria-live="polite"></div>
+    <div class="cart-footer">
+      <div class="cart-total-row">
+        <span class="cart-total-label">Total</span>
+        <span class="cart-total-val" id="cartTotal">$0.00</span>
+      </div>
+      <button class="checkout-btn">Finalizar compra →</button>
+    </div>
+  </div>
+
+  <!-- USER AUTH MODAL -->
+  <div class="auth-modal-overlay" id="authModalOverlay">
+    <div class="auth-modal" style="position:relative;">
+      <button class="auth-close-btn" id="authCloseBtn" aria-label="Cerrar">✕</button>
+      <div class="auth-modal-header">
+        <div class="auth-modal-logo">AUR<span>A</span></div>
+        <p class="auth-modal-subtitle">Accede a tu cuenta para rastrear tus pedidos</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="signup">Crear cuenta</button>
+      </div>
+      <div class="auth-form-container">
+        <!-- LOGIN FORM -->
+        <form class="auth-form active" id="authLoginForm">
+          <div class="form-group">
+            <label class="form-label" for="authLoginEmail">Correo electrónico</label>
+            <input class="form-input" type="email" id="authLoginEmail" placeholder="tu@email.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="authLoginPass">Contraseña</label>
+            <input class="form-input" type="password" id="authLoginPass" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="auth-submit-btn" id="authLoginBtn">Iniciar sesión</button>
+          <p class="auth-error" id="authLoginError"></p>
+        </form>
+        <!-- SIGNUP FORM -->
+        <form class="auth-form" id="authSignupForm">
+          <div class="form-group">
+            <label class="form-label" for="authSignupName">Nombre completo</label>
+            <input class="form-input" type="text" id="authSignupName" placeholder="Juan Pérez" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="authSignupEmail">Correo electrónico</label>
+            <input class="form-input" type="email" id="authSignupEmail" placeholder="tu@email.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="authSignupPass">Contraseña</label>
+            <input class="form-input" type="password" id="authSignupPass" placeholder="Mínimo 6 caracteres" minlength="6" required />
+          </div>
+          <button type="submit" class="auth-submit-btn" id="authSignupBtn">Crear cuenta</button>
+          <p class="auth-error" id="authSignupError"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY ORDERS PANEL -->
+  <div class="orders-panel" id="ordersPanel" role="dialog" aria-labelledby="ordersPanelTitle" aria-modal="true">
+    <div class="orders-panel-header">
+      <h2 class="orders-panel-title" id="ordersPanelTitle">Mis pedidos</h2>
+      <button class="close-panel" id="closeOrdersPanel" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="orders-list" id="ordersList" aria-live="polite">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ABOUT MODAL -->
+  <div class="modal-overlay" id="aboutModal" role="dialog" aria-labelledby="aboutTitle" aria-modal="true">
+    <div class="about-card reveal">
+      <button class="modal-close" id="closeAbout" aria-label="Cerrar">✕</button>
+      <div class="about-content">
+        <p class="section-tag">— Nuestra esencia</p>
+        <h2 class="about-title" id="aboutTitle">Quiénes somos</h2>
+        <div class="about-text" id="aboutText">
+          <!-- Injected by JS -->
+        </div>
+        <div class="about-footer">
+          <div class="about-stat">
+            <strong>2025</strong>
+            <span>Est.</span>
+          </div>
+          <div class="about-stat">
+            <strong>10k+</strong>
+            <span>Clientes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminPanelInline" class="admin-float-panel" style="display:none;">
+    <button id="adminToggle" class="admin-toggle-btn" aria-label="Panel Admin">⚙ Admin</button>
+    <div id="adminDrawer" class="admin-drawer">
+      <div class="admin-drawer-header">
+        <h3>Agregar producto</h3>
+        <button id="adminDrawerClose" class="admin-drawer-close">✕</button>
+      </div>
+      <div class="admin-drawer-body">
+        <form id="adminProductForm" class="admin-form">
+          <div class="admin-form-row">
+            <div class="admin-form-group">
+              <label for="apId">ID / SKU *</label>
+              <input id="apId" placeholder="Ej: P-001" style="text-transform: uppercase;" required />
+            </div>
+            <div class="admin-form-group">
+              <label for="apName">Nombre *</label>
+              <input id="apName" placeholder="Ej: Auriculares Pro" required />
+            </div>
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-form-group">
+              <label for="apCategory">Categoría</label>
+              <input id="apCategory" placeholder="Ej: Audio" />
+            </div>
+            <div class="admin-form-group">
+              <label for="apPrice">Precio ($) *</label>
+              <input id="apPrice" type="number" step="0.01" min="0" placeholder="0.00" required />
+            </div>
+          </div>
+          <div class="admin-form-group">
+            <label for="apDesc">Descripción</label>
+            <textarea id="apDesc" rows="2" placeholder="Descripción breve"></textarea>
+          </div>
+          <div class="admin-form-group">
+            <label>Imagen del producto</label>
+            <div class="admin-img-upload-zone" id="apImageUploadZone">
+              <input type="file" id="apImageFile" accept="image/*" />
+              <div class="upload-icon">📷</div>
+              <div class="upload-text"><strong>Clic</strong> o arrastra imagen</div>
+            </div>
+            <div id="apImagePreview" class="admin-img-preview"></div>
+            <input type="hidden" id="apImageData" />
+          </div>
+          <div class="admin-form-group">
+            <label for="apImageUrl">O usa Emoji / URL</label>
+            <input id="apImageUrl" placeholder="📦 o https://ejemplo.com/img.jpg" />
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-form-group">
+              <label for="apOldPrice">Precio anterior ($)</label>
+              <input id="apOldPrice" type="number" step="0.01" min="0" placeholder="Opcional" />
+            </div>
+            <div class="admin-form-group">
+              <label for="apBadge">Badge</label>
+              <input id="apBadge" placeholder="Nuevo, Sale…" />
+            </div>
+          </div>
+        </form>
+      </div>
+      <!-- Botón FUERA del scroll, siempre visible -->
+      <div class="admin-drawer-footer">
+        <button type="button" id="adminSubmitBtn" class="admin-submit-btn">✓ Guardar producto</button>
+      </div>
+      <p class="admin-hint">Para eliminar, pasa el cursor sobre la tarjeta y usa ✕</p>
+    </div>
+  </div>
+
+  <style>
+    /* ── Admin Float Panel ── */
+    .admin-float-panel { position: fixed; bottom: 2rem; right: 2rem; z-index: 8000; font-family: 'DM Sans', sans-serif; }
+    .admin-toggle-btn {
+      background: var(--ink); color: var(--bone); border: none;
+      padding: 0.7rem 1.4rem; font-size: 0.8rem; cursor: pointer;
+      border-radius: 50px; letter-spacing: 0.05em; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25); transition: all 0.3s;
+    }
+    .admin-toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,0,0,0.35); }
+    .admin-drawer {
+      display: none; position: absolute; bottom: 3.5rem; right: 0;
+      width: 420px; max-height: 75vh;
+      background: var(--bone); border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2); border-radius: 6px;
+      overflow: hidden; /* children handle scroll */
+    }
+    .admin-drawer.open { display: flex; flex-direction: column; }
+    .admin-drawer-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .admin-drawer-header h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; margin: 0; }
+    .admin-drawer-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
+    .admin-drawer-body { overflow-y: auto; flex: 1; }
+    .admin-form { padding: 1.2rem 1.5rem 1.5rem; }
+    .admin-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .admin-form-group { margin-bottom: 0.7rem; }
+    .admin-form-group label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.25rem; font-weight: 500; }
+    .admin-form-group input, .admin-form-group textarea {
+      width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border);
+      font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+      background: var(--cream); color: var(--ink); border-radius: 2px;
+    }
+    .admin-form-group input:focus, .admin-form-group textarea:focus { outline: none; border-color: var(--accent); }
+    .admin-submit-btn {
+      width: 100%; padding: 0.8rem; background: var(--accent); color: white;
+      border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      letter-spacing: 0.03em; transition: background 0.2s; margin-top: 0.3rem;
+      border-radius: 2px;
+    }
+    .admin-submit-btn:hover { background: var(--accent-dark); }
+    .admin-drawer-footer {
+      padding: 0.8rem 1.5rem; border-top: 1px solid var(--border);
+      flex-shrink: 0; background: var(--bone);
+    }
+    .admin-hint { padding: 0.6rem 1.5rem; font-size: 0.72rem; color: var(--muted); margin: 0; flex-shrink: 0; }
+
+    /* ── Image preview ── */
+    .admin-img-preview {
+      margin-top: 0.4rem; min-height: 50px; display: flex; align-items: center; justify-content: center;
+      background: var(--cream); border: 1px dashed var(--border); border-radius: 4px; overflow: hidden;
+    }
+    .admin-img-preview img { max-width: 100%; max-height: 120px; object-fit: contain; }
+    .admin-img-preview .emoji-preview { font-size: 2.5rem; padding: 0.5rem; }
+    .admin-img-preview.has-image { display: flex; min-height: 50px; position: relative; }
+    .admin-img-preview .remove-img {
+      position: absolute; top: 0.3rem; right: 0.3rem;
+      background: rgba(192,57,43,0.85); color: white; border: none;
+      width: 20px; height: 20px; border-radius: 50%; font-size: 0.65rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .admin-img-preview:hover .remove-img { opacity: 1; }
+
+    /* ── Admin Upload Zone ── */
+    .admin-img-upload-zone {
+      margin-top: 0.3rem; padding: 1rem; background: var(--cream);
+      border: 2px dashed var(--border); border-radius: 4px;
+      text-align: center; cursor: pointer; transition: all 0.3s;
+      position: relative; min-height: 70px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .admin-img-upload-zone:hover, .admin-img-upload-zone.dragover {
+      border-color: var(--accent); background: rgba(183,139,93,0.05);
+    }
+    .admin-img-upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .admin-img-upload-zone .upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; opacity: 0.5; }
+    .admin-img-upload-zone .upload-text { font-size: 0.7rem; color: var(--muted); }
+    .admin-img-upload-zone .upload-text strong { color: var(--accent); }
+
+    /* ── Delete button on product cards (admin only) ── */
+    .product-card .admin-delete-btn {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      background: rgba(192,57,43,0.9); color: white; border: none;
+      width: 28px; height: 28px; border-radius: 50%; font-size: 0.85rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s; z-index: 10; line-height: 1;
+    }
+    .product-card:hover .admin-delete-btn { opacity: 1; }
+    .product-card { position: relative; }
+
+    @media (max-width: 480px) {
+      .admin-float-panel { right: 1rem; bottom: 1rem; }
+      .admin-drawer { width: calc(100vw - 2rem); right: 0; max-height: 80vh; }
+    }
+  </style>
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <!-- ADMIN FLOATING PANEL (Visible only when logged in) -->
+  <div id="adminPanelLogin" style="display:none; position:fixed; bottom:20px; right:20px; z-index:1000; background:rgba(255,255,255,0.8); padding:10px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 10px 30px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a href="admin.html" style="background:#000; color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:500;">Admin</a>
+      <button id="btnMainLogout" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:500;">Salir</button>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/store.js" defer></script>
+  <script src="js/index.js" defer></script>
+  <script src="js/assistant.js" defer></script>
+
+</body>
+
+</html>

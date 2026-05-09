@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA — Panel de Administración</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- ISO/IEC 27001 & ISO/IEC 27034: Implementación de Content Security Policy (CSP) para prevenir ataques XSS -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://firestore.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com https://www.gstatic.com;" />
+
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/common.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+
+  <style>
+    /* ── CRUD STATUS BAR ── */
+    .db-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .db-status.online {
+      background: rgba(45, 158, 107, 0.12);
+      color: #2d9e6b;
+    }
+
+    .db-status.offline {
+      background: rgba(192, 57, 43, 0.12);
+      color: #c0392b;
+    }
+
+    .db-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ── PRODUCT TABLE EMPTY STATE ── */
+    .table-empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .table-empty span {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    /* ── FORM INPUT BACKGROUND FIX ── */
+    .form-input {
+      background: var(--cream);
+      color: var(--ink);
+    }
+
+    /* ── IMAGE UPLOAD ── */
+    .image-upload-zone {
+      margin-top: 0.5rem;
+      padding: 1.5rem;
+      background: var(--cream);
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-upload-zone:hover,
+    .image-upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(183, 139, 93, 0.05);
+    }
+
+    .image-upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .image-upload-zone .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.5;
+    }
+
+    .image-upload-zone .upload-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .image-upload-zone .upload-text strong {
+      color: var(--accent);
+    }
+
+    #imagePreview {
+      margin-top: 0.5rem;
+      min-height: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #imagePreview.has-image {
+      display: flex;
+      min-height: 120px;
+    }
+
+    #imagePreview img {
+      max-width: 100%;
+      max-height: 180px;
+      object-fit: contain;
+    }
+
+    #imagePreview .emoji-preview {
+      font-size: 3rem;
+      padding: 1rem;
+    }
+
+    #imagePreview .remove-img {
+      position: absolute;
+      top: 0.4rem;
+      right: 0.4rem;
+      background: rgba(192, 57, 43, 0.85);
+      color: white;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    #imagePreview:hover .remove-img {
+      opacity: 1;
+    }
+
+    /* ── QUICK ACTION BUTTONS ── */
+    .quick-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      background: none;
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.2rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--ink);
+      border-radius: 2px;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-danger-outline {
+      background: none;
+      border: 1px solid rgba(192, 57, 43, 0.3);
+      padding: 0.6rem 1.2rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--danger);
+      border-radius: 2px;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    .btn-danger-outline:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* ── TABLE THUMBS ── */
+    .td-thumb-wrapper {
+      width: 40px;
+      height: 40px;
+      background: var(--cream);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+    .td-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .td-img-emoji {
+      font-size: 1.2rem;
+    }
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .login-screen.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      padding: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid var(--border);
+      text-align: center;
+      transform: translateY(20px);
+      transition: transform 0.5s ease;
+    }
+
+    .login-screen.active .login-card {
+      transform: translateY(0);
+    }
+
+    .login-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.5rem;
+      color: var(--accent);
+      margin-bottom: 2rem;
+      letter-spacing: 0.1em;
+    }
+
+    .login-logo span {
+      font-weight: 300;
+      color: var(--ink);
+    }
+
+    .login-form {
+      text-align: left;
+    }
+
+    .login-form .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .login-btn {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .login-card {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+      }
+      .login-logo { font-size: 2rem; }
+      
+      .main { margin-left: 0; width: 100%; }
+      .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+      .sidebar.active { transform: translateX(0); }
+      
+      .topbar { left: 0; padding: 0 1.5rem; }
+      .content { padding: 1.5rem; }
+      .menu-toggle { display: block !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen active" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">AUR<span>A</span></div>
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email del Administrador</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="admin@aura.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPass">Contraseña</label>
+          <input type="password" id="loginPass" class="form-input" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-primary login-btn">ACCEDER AL PANEL</button>
+      </form>
+      <p id="loginError" style="color:var(--danger); font-size:0.8rem; margin-top:1rem; min-height:1.2em;"></p>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="index.html">AUR<span>A</span></a>
+      <div class="sidebar-badge">ADMIN PANEL</div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav">
+      <p class="nav-section-label">Principal</p>
+      <button class="nav-item active" data-panel="dashboard">
+        <span class="icon">◱</span><span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-panel="products">
+        <span class="icon">📦</span><span>Productos</span>
+      </button>
+      <button class="nav-item" data-panel="reviews">
+        <span class="icon">💬</span><span>Testimonios</span>
+      </button>
+      <button class="nav-item" data-panel="orders">
+        <span class="icon">🛒</span><span>Pedidos</span>
+      </button>
+      <button class="nav-item" data-panel="sales">
+        <span class="icon">💸</span><span>Ventas</span>
+      </button>
+      <button class="nav-item" data-panel="suggestions">
+        <span class="icon">💡</span><span>Sugerencias</span>
+      </button>
+
+      <p class="nav-section-label">Más</p>
+      <button class="nav-item" data-panel="settings">
+        <span class="icon" aria-hidden="true">⊙</span><span>Ajustes</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="index.html"><span>←</span><span> Ver tienda</span></a>
+      <button id="btnLogout"
+        style="background:none;border:none;color:var(--sidebar-text);cursor:pointer;font-size:0.75rem;margin-top:1rem;display:block;">Cerrar
+        sesión</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle" style="background:none;border:none;font-size:1.5rem;cursor:pointer;display:none;margin-right:1rem;color:var(--ink);">☰</button>
+      <h1 class="topbar-title" id="topbarTitle">Dashboard</h1>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema"
+          style="background:none;border:none;cursor:pointer;color:var(--ink);display:flex;align-items:center;"></button>
+        <span id="dbStatus" class="db-status offline"><span class="db-dot"></span><span
+            id="dbStatusText">Cargando…</span></span>
+        <span class="topbar-badge" id="currentDate"></span>
+        <span class="topbar-badge">Admin</span>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- STATS (always visible) -->
+      <section class="stats-grid reveal" aria-label="Estadísticas">
+        <div class="stat-card">
+          <p class="stat-label">Productos</p>
+          <div class="stat-value" id="statProducts">0</div>
+          <p class="stat-sub">En catálogo activo</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Valor promedio</p>
+          <div class="stat-value" id="statAvg">$0</div>
+          <p class="stat-sub">Por producto</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Inventario total</p>
+          <div class="stat-value" id="statTotal">$0</div>
+          <p class="stat-sub">Suma catálogo</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Más caro</p>
+          <div class="stat-value" id="statMax">$0</div>
+          <p class="stat-sub">Precio máximo</p>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: DASHBOARD ══ -->
+      <section class="panel active" id="panelDashboard">
+        <div class="quick-actions">
+          <button class="btn-outline" id="btnGoProducts">+ Agregar producto</button>
+          <button class="btn-danger-outline" id="btnClearProducts">🗑 Limpiar catálogo</button>
+        </div>
+        <div class="dash-grid">
+          <div class="dash-card">
+            <h2 class="dash-card-title">Actividad reciente</h2>
+            <div id="activityFeed"></div>
+          </div>
+          <div class="dash-card">
+            <h2 class="dash-card-title">Productos destacados</h2>
+            <div id="topProducts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: PRODUCTS CRUD ══ -->
+      <section class="panel" id="panelProducts">
+        <div class="section-bar">
+          <h2 class="section-bar-title">Gestión de productos</h2>
+          <button class="btn-primary" id="btnNewProduct">+ Nuevo producto</button>
+        </div>
+
+        <!-- Search / filter bar -->
+        <div style="margin-bottom:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+          <input id="searchProducts" class="form-input" placeholder="🔍 Buscar producto…"
+            style="max-width:280px;padding:0.6rem 1rem;font-size:0.85rem;" />
+          <select id="filterCategory" class="form-input" style="max-width:180px;padding:0.6rem 1rem;font-size:0.85rem;">
+            <option value="">Todas las categorías</option>
+          </select>
+          <span id="productCount" style="font-size:0.8rem;color:var(--muted);margin-left:auto;"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px">Icono</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Badge</th>
+                <th style="width:130px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productsTable">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: REVIEWS ══ -->
+      <section class="panel" id="panelReviews">
+        <div class="section-bar">
+          <h2 class="section-bar-title">Gestión de Reseñas</h2>
+          <button class="btn-primary" id="btnNewReview">+ Nueva reseña</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Autor</th>
+                <th>Calificación</th>
+                <th>Comentario</th>
+                <th style="width:130px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="reviewsTable">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: ORDERS ══ -->
+      <section class="panel" id="panelOrders">
+        <div class="section-bar">
+          <h2 class="section-bar-title">Gestión de Pedidos</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Pedido</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th style="width:180px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTable">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: VENTAS ══ -->
+      <section class="panel" id="panelSales">
+        <div class="section-bar">
+          <h2 class="section-bar-title">Reporte de Ventas</h2>
+        </div>
+        
+        <div class="dash-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 2rem;">
+          <div class="dash-card">
+            <h3 style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Ingresos Totales</h3>
+            <div id="salesTotalRevenue" style="font-size: 2rem; font-family: 'Cormorant Garamond', serif; font-weight: 600; color: var(--accent); margin-top: 0.5rem;">$0.00</div>
+          </div>
+          <div class="dash-card">
+            <h3 style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Pedidos Completados</h3>
+            <div id="salesTotalOrders" style="font-size: 2rem; font-family: 'Cormorant Garamond', serif; font-weight: 600; margin-top: 0.5rem;">0</div>
+          </div>
+          <div class="dash-card">
+            <h3 style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Ticket Promedio</h3>
+            <div id="salesAvgTicket" style="font-size: 2rem; font-family: 'Cormorant Garamond', serif; font-weight: 600; margin-top: 0.5rem;">$0.00</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <h3 style="margin: 1.5rem 1.5rem 0.5rem; font-size: 1.1rem; font-family: 'Cormorant Garamond', serif; font-weight: 600;">Ventas Recientes</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>ID Pedido</th>
+                <th>Fecha</th>
+                <th>Productos</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="salesTable">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ PANEL: SUGGESTIONS ══ -->
+      <section class="panel" id="panelSuggestions">
+        <div class="section-bar">
+          <h2 class="section-bar-title">Sugerencias de Usuarios</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Autor</th>
+                <th>Email</th>
+                <th>Mensaje</th>
+                <th>Fecha</th>
+                <th style="width:100px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="suggestionsTable">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <!-- ══ PANEL: SETTINGS ══ -->
+      <section class="panel" id="panelSettings">
+        <div class="dash-card" style="max-width:480px;">
+          <h2 class="dash-card-title">Ajustes de la tienda</h2>
+          <div class="form-group" style="margin-top:1rem">
+            <label class="form-label" for="settingName">Nombre de la tienda</label>
+            <input class="form-input" id="settingName" value="AURA" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settingCurrency">Moneda</label>
+            <input class="form-input" id="settingCurrency" value="USD ($)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settingShipping">Mínimo envío gratis</label>
+            <input class="form-input" id="settingShipping" value="$80" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settingPhone">WhatsApp de Pedidos</label>
+            <input class="form-input" id="settingPhone" placeholder="Ej: 573001234567" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="settingAbout">Quiénes somos</label>
+            <textarea class="form-input" id="settingAbout" rows="4"></textarea>
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap;">
+            <button class="btn-primary" id="btnSaveSettings">Guardar ajustes</button>
+            <button class="btn-danger-outline" id="btnResetData">Reiniciar tienda</button>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </main>
+
+  <!-- ══ MODAL: PRODUCTO ══ -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+    <div class="modal">
+      <header class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Nuevo producto</h2>
+        <button class="modal-close" id="modalCloseBtn" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="modal-body">
+        <input type="hidden" id="editId" />
+        <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="fId">ID / SKU del Producto *</label>
+          <input class="form-input" id="fId" placeholder="Ej: P-001" style="text-transform: uppercase;" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fName">Nombre *</label>
+          <input class="form-input" id="fName" placeholder="Ej: Auriculares Pro" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+            <label class="form-label" for="fCategory">Categoría</label>
+            <input class="form-input" id="fCategory" placeholder="Ej: Audio" list="categoryList" />
+            <datalist id="categoryList"></datalist>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fDesc">Descripción</label>
+          <textarea class="form-input" id="fDesc" placeholder="Descripción breve del producto" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fPrice">Precio ($) *</label>
+            <input class="form-input" id="fPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fOldPrice">Precio anterior ($)</label>
+            <input class="form-input" id="fOldPrice" type="number" step="0.01" min="0" placeholder="Opcional" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Imagen del producto</label>
+          <div class="image-upload-zone" id="imageUploadZone">
+            <input type="file" id="fImageFile" accept="image/*" />
+            <div class="upload-icon">📷</div>
+            <div class="upload-text"><strong>Haz clic</strong> o arrastra una imagen aquí</div>
+          </div>
+          <div id="imagePreview"></div>
+          <input type="hidden" id="fImage" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fImageAlt">O usa un Emoji / URL</label>
+            <input class="form-input" id="fImageAlt" placeholder="📦 o https://ejemplo.com/img.jpg" />
+            <p style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Si subes imagen, este campo se ignora</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fBadge">Badge (etiqueta)</label>
+            <input class="form-input" id="fBadge" placeholder="Nuevo, Sale, Top ventas…" />
+            <p style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Aparece como etiqueta sobre el producto
+            </p>
+          </div>
+        </div>
+      </div>
+      <footer class="form-footer">
+        <button class="btn-cancel" id="btnCancelModal">Cancelar</button>
+        <button class="btn-primary" id="btnSaveProduct">Guardar producto</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: RESEÑA ══ -->
+  <div class="modal-overlay" id="reviewModalOverlay" role="dialog" aria-labelledby="reviewModalTitle" aria-modal="true">
+    <div class="modal" style="max-width: 400px;">
+      <header class="modal-header">
+        <h2 class="modal-title" id="reviewModalTitle">Nueva reseña</h2>
+        <button class="modal-close" id="reviewModalCloseBtn" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="modal-body">
+        <input type="hidden" id="editReviewId" />
+        <div class="form-group">
+          <label class="form-label" for="rAuthor">Autor *</label>
+          <input class="form-input" id="rAuthor" placeholder="Ej: Juan Pérez" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rRating">Calificación (1-5) *</label>
+          <input class="form-input" id="rRating" type="number" min="1" max="5" value="5" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rText">Comentario *</label>
+          <textarea class="form-input" id="rText" placeholder="Escribe la reseña aquí..." rows="4"></textarea>
+        </div>
+      </div>
+      <footer class="form-footer">
+        <button class="btn-cancel" id="btnCancelReviewModal">Cancelar</button>
+        <button class="btn-primary" id="btnSaveReview">Guardar reseña</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: PEDIDO ══ -->
+  <div class="modal-overlay" id="orderModalOverlay" role="dialog" aria-labelledby="orderModalTitle" aria-modal="true">
+    <div class="modal" style="max-width: 500px;">
+      <header class="modal-header">
+        <h2 class="modal-title" id="orderModalTitle">Detalles del Pedido</h2>
+        <button class="modal-close" id="orderModalCloseBtn" aria-label="Cerrar">✕</button>
+      </header>
+      <div class="modal-body" id="orderModalBody" style="font-size: 0.9rem; line-height: 1.5;">
+        <!-- Rendered by JS -->
+      </div>
+      <footer class="form-footer">
+        <button class="btn-cancel" id="btnCancelOrderModal">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+
+
+  <!-- FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <!-- SCRIPTS -->
+  <script src="js/store.js" defer></script>
+  <script src="js/admin.js" defer></script>
+
+</body>
+
+</html>

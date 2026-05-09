@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Reglas Generales (Denegar por defecto)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // PRODUCTOS: Público para leer, validación estricta para escribir
+    match /products/{id} {
+      allow read: if true;
+      allow write: if (request.resource != null && request.resource.data.name is string && request.resource.data.price is number)
+                   || request.resource == null; // Permitir borrado
+    }
+
+    // RESEÑAS Y AJUSTES: Público para leer
+    match /reviews/{id} { allow read: if true; allow write: if true; }
+    match /settings/{id} { allow read: if true; allow write: if true; }
+
+    // PEDIDOS Y SUGERENCIAS: Solo escritura (el cliente envía, no lee todos los pedidos)
+    // PEDIDOS: Usuarios autenticados pueden leer, cualquiera puede crear
+    match /orders/{id} { allow create: if true; allow read: if request.auth != null; allow update, delete: if request.auth != null; }
+    match /suggestions/{id} { allow create: if true; allow read, update, delete: if false; }
+  }
+}
