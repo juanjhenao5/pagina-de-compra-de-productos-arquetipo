@@ -18,7 +18,7 @@
         "productos": "Tenemos una selección premium de tecnología. ¿Buscas algo en específico? Puedo mostrarte nuestro catálogo.",
         "contacto": "Puedes contactarnos vía WhatsApp para una atención más personalizada. ¿Deseas que te redirija?",
         "carrito": "Puedo ayudarte a revisar lo que tienes guardado. ¿Quieres ver tu carrito?",
-        "nosotros": "AURA nació en 2025 con el propósito de ofrecer objetos tecnológicos que combinan diseño minimalista y alta calidad.",
+        "nosotros": "AURA nació en 2026 con el propósito de ofrecer objetos tecnológicos que combinan diseño minimalista y alta calidad.",
         "ayuda": "Puedo informarte sobre envíos, garantías, métodos de pago o mostrarte nuestros productos estrella."
     };
 

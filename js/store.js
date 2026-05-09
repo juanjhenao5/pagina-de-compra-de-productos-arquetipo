@@ -66,6 +66,14 @@ const auraStore = (() => {
   };
 
   /**
+   * Helper: Añade un timeout a promesas de Firebase para evitar cuelgues (Fiabilidad ISO 25010)
+   */
+  const withTimeout = (promise, ms) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms))
+  ]);
+
+  /**
    * @function syncFromFirebase
    * @description Sincroniza datos desde Firestore SOLO en la primera carga
    * (cuando localStorage no tiene datos). Después, localStorage es la
@@ -73,12 +81,6 @@ const auraStore = (() => {
    */
   const syncFromFirebase = async () => {
     if (!firebaseActive) return;
-
-    // Helper: timeout para evitar que se quede colgado
-    const withTimeout = (promise, ms) => Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase sync timeout')), ms))
-    ]);
 
     try {
       const productsSnapshot = await withTimeout(db.collection('products').get(), 5000);
@@ -286,11 +288,6 @@ const auraStore = (() => {
       setToStorage(STORAGE_KEYS.REVIEWS, normalized);
 
       if (firebaseActive) {
-        const withTimeout = (promise, ms) => Promise.race([
-          promise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms))
-        ]);
-
         (async () => {
           try {
             const previousIds = new Set(previous.map(r => r.id.toString()));
@@ -323,11 +320,6 @@ const auraStore = (() => {
       setToStorage(STORAGE_KEYS.ORDERS, normalized);
 
       if (firebaseActive) {
-        const withTimeout = (promise, ms) => Promise.race([
-          promise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms))
-        ]);
-
         const doSync = async () => {
           try {
             const previousIds = new Set(previous.map(o => o.id.toString()));
@@ -368,7 +360,6 @@ const auraStore = (() => {
       const previous = getFromStorage(STORAGE_KEYS.SUGGESTIONS, []);
       setToStorage(STORAGE_KEYS.SUGGESTIONS, normalized);
       if (firebaseActive) {
-        const withTimeout = (promise, ms) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms))]);
         (async () => {
           try {
             const prevIds = new Set(previous.map(s => s.id.toString()));
@@ -398,12 +389,6 @@ const auraStore = (() => {
 
       // ── Then sync to Firebase in background (non-blocking) ──
       if (firebaseActive) {
-        // Helper: create a promise with timeout
-        const withTimeout = (promise, ms) => Promise.race([
-          promise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms))
-        ]);
-
         // Helper: prepare product for Firestore (strip large base64 to stay under 1MB doc limit)
         const prepareForFirestore = (p) => {
           const copy = { ...p };
