@@ -485,14 +485,25 @@ const auraStore = (() => {
         console.log('%c✦ AURA: Cache limpiado (migración de versión).', 'color: #b59b6d;');
       }
 
-      initFirebase();
-      await syncFromFirebase();
+      // ── PHASE 1: Instant (from localStorage — 0ms delay) ──
+      const theme = localStorage.getItem('aura_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
       initCookies();
       applySettings();
 
-      const theme = localStorage.getItem('aura_theme') || 'light';
-      document.documentElement.setAttribute('data-theme', theme);
+      // ── PHASE 2: Background Firebase sync (non-blocking) ──
+      initFirebase();
+      syncFromFirebase().then(() => {
+        applySettings(); // Re-apply if settings came from Firebase
+        // Notify listeners that fresh data is available
+        if (typeof auraStore._onSyncComplete === 'function') {
+          auraStore._onSyncComplete();
+        }
+      });
     },
+
+    // Callback for when Firebase sync completes (set by consumers like index.js)
+    _onSyncComplete: null,
 
     toggleTheme: () => {
       const current = document.documentElement.getAttribute('data-theme') || 'light';

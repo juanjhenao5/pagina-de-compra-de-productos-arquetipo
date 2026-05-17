@@ -12,10 +12,22 @@
   <meta property="og:title" content="AURA — Tecnología con Propósito" />
   <meta property="og:description" content="Productos seleccionados para quienes valoran la calidad y el diseño." />
   <meta property="og:type" content="website" />
+  <meta name="robots" content="index, follow" />
   <title>AURA — Tecnología con Propósito</title>
+
+  <!-- INSTANT THEME: Aplicar tema guardado ANTES del primer paint para eliminar flash blanco -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('aura_theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" />
   <link
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap"
     rel="stylesheet" />
@@ -24,9 +36,117 @@
   <link rel="stylesheet" href="css/common.css" />
   <link rel="stylesheet" href="css/index.css" />
   <link rel="stylesheet" href="css/assistant.css" />
+
+  <!-- SPLASH SCREEN CSS: Se muestra inmediatamente mientras carga la app -->
+  <style>
+    .aura-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: var(--cream);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+    }
+
+    .aura-splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .aura-splash-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      margin-bottom: 2rem;
+      animation: splashPulse 2s ease-in-out infinite;
+    }
+
+    .aura-splash-logo span {
+      color: var(--accent);
+    }
+
+    @keyframes splashPulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.7;
+        transform: scale(1.03);
+      }
+    }
+
+    .aura-splash-bar {
+      width: 120px;
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .aura-splash-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -40px;
+      width: 40px;
+      height: 100%;
+      background: var(--accent);
+      animation: splashLoad 1.2s ease-in-out infinite;
+    }
+
+    @keyframes splashLoad {
+      0% {
+        left: -40px;
+      }
+
+      100% {
+        left: 120px;
+      }
+    }
+
+    .aura-splash-text {
+      margin-top: 1.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      animation: splashTextFade 2s ease-in-out infinite;
+    }
+
+    @keyframes splashTextFade {
+
+      0%,
+      100% {
+        opacity: 0.5;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
 
 <body>
+
+  <!-- SPLASH SCREEN: Distracción premium mientras carga Firebase -->
+  <div class="aura-splash" id="auraSplash" aria-live="polite" role="status">
+    <div class="aura-splash-logo">AUR<span>A</span></div>
+    <div class="aura-splash-bar"></div>
+    <p class="aura-splash-text">Preparando tu experiencia</p>
+  </div>
 
   <!-- NAV -->
   <nav>
@@ -40,7 +160,10 @@
       </button>
       <button class="user-btn" id="userBtn" aria-label="Mi cuenta">
         <span class="user-icon" id="userIconInner">
-          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          </svg>
         </span>
         <span id="userBtnLabel">Mi cuenta</span>
         <!-- User dropdown -->
@@ -130,35 +253,36 @@
           <h2 class="section-title">Lo que dicen<br>nuestros clientes</h2>
         </div>
       </div>
-      <div class="reviews-grid" id="reviewsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem;">
+      <div class="reviews-grid" id="reviewsGrid"
+        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem;">
         <!-- Rendered by JS -->
       </div>
     </section>
 
   </main>
 
-  <!-- FOOTER -->
   <footer>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 3rem; margin-bottom: 3rem; padding-bottom: 3rem; border-bottom: 1px solid rgba(0,0,0,0.05);">
+    <div class="footer-grid">
       <div>
-        <div class="footer-logo" style="margin-bottom: 1rem;">AUR<span>A</span></div>
-        <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.6;">Elevando tu estilo de vida a través de objetos con propósito y diseño minimalista.</p>
+        <div class="footer-logo">AUR<span>A</span></div>
+        <p class="footer-tagline">Elevando tu estilo de vida a través de objetos con propósito y diseño minimalista.</p>
       </div>
       <div>
-        <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 1rem;">Enlaces</h4>
-        <div class="footer-links" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;">
+        <h4 class="footer-heading">Enlaces</h4>
+        <div class="footer-links footer-links-col">
           <a href="#">Términos</a>
           <a href="#">Privacidad</a>
           <a href="admin.html">Admin</a>
         </div>
       </div>
       <div id="suggestionBox">
-        <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; margin-bottom: 1rem;">Sugerencias</h4>
-        <form id="suggestionForm" style="display: flex; flex-direction: column; gap: 0.6rem;">
-          <input type="text" id="sugName" placeholder="Tu nombre" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone);" required />
-          <input type="email" id="sugEmail" placeholder="Tu email" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone);" required />
-          <textarea id="sugMessage" placeholder="¿Cómo podemos mejorar?" style="padding: 0.6rem; border: 1px solid var(--border); border-radius: 2px; font-size: 0.8rem; background: var(--bone); resize: none;" rows="2" required></textarea>
-          <button type="submit" style="padding: 0.6rem; background: var(--ink); color: white; border: none; border-radius: 2px; font-size: 0.75rem; cursor: pointer; transition: opacity 0.2s;">Enviar</button>
+        <h4 class="footer-heading">Sugerencias</h4>
+        <form id="suggestionForm" class="suggestion-form">
+          <input type="text" id="sugName" placeholder="Tu nombre" class="sug-input" required />
+          <input type="email" id="sugEmail" placeholder="Tu email" class="sug-input" required />
+          <textarea id="sugMessage" placeholder="¿Cómo podemos mejorar?" class="sug-input sug-textarea" rows="2"
+            required></textarea>
+          <button type="submit" class="sug-submit">Enviar</button>
         </form>
       </div>
     </div>
@@ -220,7 +344,8 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="authSignupPass">Contraseña</label>
-            <input class="form-input" type="password" id="authSignupPass" placeholder="Mínimo 6 caracteres" minlength="6" required />
+            <input class="form-input" type="password" id="authSignupPass" placeholder="Mínimo 6 caracteres"
+              minlength="6" required />
           </div>
           <button type="submit" class="auth-submit-btn" id="authSignupBtn">Crear cuenta</button>
           <p class="auth-error" id="authSignupError"></p>
@@ -333,101 +458,300 @@
 
   <style>
     /* ── Admin Float Panel ── */
-    .admin-float-panel { position: fixed; bottom: 2rem; right: 2rem; z-index: 8000; font-family: 'DM Sans', sans-serif; }
+    .admin-float-panel {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 8000;
+      font-family: 'DM Sans', sans-serif;
+    }
+
     .admin-toggle-btn {
-      background: var(--ink); color: var(--bone); border: none;
-      padding: 0.7rem 1.4rem; font-size: 0.8rem; cursor: pointer;
-      border-radius: 50px; letter-spacing: 0.05em; font-weight: 500;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25); transition: all 0.3s;
+      background: var(--ink);
+      color: var(--bone);
+      border: none;
+      padding: 0.7rem 1.4rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 50px;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      transition: all 0.3s;
     }
-    .admin-toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,0,0,0.35); }
+
+    .admin-toggle-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
+    }
+
     .admin-drawer {
-      display: none; position: absolute; bottom: 3.5rem; right: 0;
-      width: 420px; max-height: 75vh;
-      background: var(--bone); border: 1px solid var(--border);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2); border-radius: 6px;
-      overflow: hidden; /* children handle scroll */
+      display: none;
+      position: absolute;
+      bottom: 3.5rem;
+      right: 0;
+      width: 420px;
+      max-height: 75vh;
+      background: var(--bone);
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      overflow: hidden;
+      /* children handle scroll */
     }
-    .admin-drawer.open { display: flex; flex-direction: column; }
+
+    .admin-drawer.open {
+      display: flex;
+      flex-direction: column;
+    }
+
     .admin-drawer-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
-    .admin-drawer-header h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; margin: 0; }
-    .admin-drawer-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); }
-    .admin-drawer-body { overflow-y: auto; flex: 1; }
-    .admin-form { padding: 1.2rem 1.5rem 1.5rem; }
-    .admin-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-    .admin-form-group { margin-bottom: 0.7rem; }
-    .admin-form-group label { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.25rem; font-weight: 500; }
-    .admin-form-group input, .admin-form-group textarea {
-      width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--border);
-      font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
-      background: var(--cream); color: var(--ink); border-radius: 2px;
+
+    .admin-drawer-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0;
     }
-    .admin-form-group input:focus, .admin-form-group textarea:focus { outline: none; border-color: var(--accent); }
-    .admin-submit-btn {
-      width: 100%; padding: 0.8rem; background: var(--accent); color: white;
-      border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      letter-spacing: 0.03em; transition: background 0.2s; margin-top: 0.3rem;
+
+    .admin-drawer-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .admin-drawer-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .admin-form {
+      padding: 1.2rem 1.5rem 1.5rem;
+    }
+
+    .admin-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+    }
+
+    .admin-form-group {
+      margin-bottom: 0.7rem;
+    }
+
+    .admin-form-group label {
+      display: block;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      font-weight: 500;
+    }
+
+    .admin-form-group input,
+    .admin-form-group textarea {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--border);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      background: var(--cream);
+      color: var(--ink);
       border-radius: 2px;
     }
-    .admin-submit-btn:hover { background: var(--accent-dark); }
-    .admin-drawer-footer {
-      padding: 0.8rem 1.5rem; border-top: 1px solid var(--border);
-      flex-shrink: 0; background: var(--bone);
+
+    .admin-form-group input:focus,
+    .admin-form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
     }
-    .admin-hint { padding: 0.6rem 1.5rem; font-size: 0.72rem; color: var(--muted); margin: 0; flex-shrink: 0; }
+
+    .admin-submit-btn {
+      width: 100%;
+      padding: 0.8rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s;
+      margin-top: 0.3rem;
+      border-radius: 2px;
+    }
+
+    .admin-submit-btn:hover {
+      background: var(--accent-dark);
+    }
+
+    .admin-drawer-footer {
+      padding: 0.8rem 1.5rem;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--bone);
+    }
+
+    .admin-hint {
+      padding: 0.6rem 1.5rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 0;
+      flex-shrink: 0;
+    }
 
     /* ── Image preview ── */
     .admin-img-preview {
-      margin-top: 0.4rem; min-height: 50px; display: flex; align-items: center; justify-content: center;
-      background: var(--cream); border: 1px dashed var(--border); border-radius: 4px; overflow: hidden;
+      margin-top: 0.4rem;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--cream);
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      overflow: hidden;
     }
-    .admin-img-preview img { max-width: 100%; max-height: 120px; object-fit: contain; }
-    .admin-img-preview .emoji-preview { font-size: 2.5rem; padding: 0.5rem; }
-    .admin-img-preview.has-image { display: flex; min-height: 50px; position: relative; }
+
+    .admin-img-preview img {
+      max-width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+    }
+
+    .admin-img-preview .emoji-preview {
+      font-size: 2.5rem;
+      padding: 0.5rem;
+    }
+
+    .admin-img-preview.has-image {
+      display: flex;
+      min-height: 50px;
+      position: relative;
+    }
+
     .admin-img-preview .remove-img {
-      position: absolute; top: 0.3rem; right: 0.3rem;
-      background: rgba(192,57,43,0.85); color: white; border: none;
-      width: 20px; height: 20px; border-radius: 50%; font-size: 0.65rem;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s;
+      position: absolute;
+      top: 0.3rem;
+      right: 0.3rem;
+      background: rgba(192, 57, 43, 0.85);
+      color: white;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
     }
-    .admin-img-preview:hover .remove-img { opacity: 1; }
+
+    .admin-img-preview:hover .remove-img {
+      opacity: 1;
+    }
 
     /* ── Admin Upload Zone ── */
     .admin-img-upload-zone {
-      margin-top: 0.3rem; padding: 1rem; background: var(--cream);
-      border: 2px dashed var(--border); border-radius: 4px;
-      text-align: center; cursor: pointer; transition: all 0.3s;
-      position: relative; min-height: 70px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin-top: 0.3rem;
+      padding: 1rem;
+      background: var(--cream);
+      border: 2px dashed var(--border);
+      border-radius: 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .admin-img-upload-zone:hover, .admin-img-upload-zone.dragover {
-      border-color: var(--accent); background: rgba(183,139,93,0.05);
+
+    .admin-img-upload-zone:hover,
+    .admin-img-upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(183, 139, 93, 0.05);
     }
+
     .admin-img-upload-zone input[type="file"] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
     }
-    .admin-img-upload-zone .upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; opacity: 0.5; }
-    .admin-img-upload-zone .upload-text { font-size: 0.7rem; color: var(--muted); }
-    .admin-img-upload-zone .upload-text strong { color: var(--accent); }
+
+    .admin-img-upload-zone .upload-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+      opacity: 0.5;
+    }
+
+    .admin-img-upload-zone .upload-text {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .admin-img-upload-zone .upload-text strong {
+      color: var(--accent);
+    }
 
     /* ── Delete button on product cards (admin only) ── */
     .product-card .admin-delete-btn {
-      position: absolute; top: 0.6rem; right: 0.6rem;
-      background: rgba(192,57,43,0.9); color: white; border: none;
-      width: 28px; height: 28px; border-radius: 50%; font-size: 0.85rem;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s; z-index: 10; line-height: 1;
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      background: rgba(192, 57, 43, 0.9);
+      color: white;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+      line-height: 1;
     }
-    .product-card:hover .admin-delete-btn { opacity: 1; }
-    .product-card { position: relative; }
+
+    .product-card:hover .admin-delete-btn {
+      opacity: 1;
+    }
+
+    .product-card {
+      position: relative;
+    }
 
     @media (max-width: 480px) {
-      .admin-float-panel { right: 1rem; bottom: 1rem; }
-      .admin-drawer { width: calc(100vw - 2rem); right: 0; max-height: 80vh; }
+      .admin-float-panel {
+        right: 1rem;
+        bottom: 1rem;
+      }
+
+      .admin-drawer {
+        width: calc(100vw - 2rem);
+        right: 0;
+        max-height: 80vh;
+      }
     }
   </style>
 
@@ -439,10 +763,13 @@
   <script src="js/firebase-config.js"></script>
 
   <!-- ADMIN FLOATING PANEL (Visible only when logged in) -->
-  <div id="adminPanelLogin" style="display:none; position:fixed; bottom:20px; right:20px; z-index:1000; background:rgba(255,255,255,0.8); padding:10px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 10px 30px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
+  <div id="adminPanelLogin"
+    style="display:none; position:fixed; bottom:20px; right:20px; z-index:1000; background:rgba(255,255,255,0.8); padding:10px; border-radius:12px; border:1px solid rgba(0,0,0,0.05); box-shadow:0 10px 30px rgba(0,0,0,0.1); backdrop-filter:blur(10px);">
     <div style="display:flex; gap:8px; align-items:center;">
-      <a href="admin.html" style="background:#000; color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:500;">Admin</a>
-      <button id="btnMainLogout" style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:500;">Salir</button>
+      <a href="admin.html"
+        style="background:#000; color:#fff; padding:8px 16px; border-radius:8px; text-decoration:none; font-size:0.85rem; font-weight:500;">Admin</a>
+      <button id="btnMainLogout"
+        style="background:rgba(255,59,48,0.1); color:#ff3b30; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:0.85rem; font-weight:500;">Salir</button>
     </div>
   </div>
 

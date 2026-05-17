@@ -86,7 +86,7 @@
       total += sub;
       return `
         <div class="c-item" data-id="${item.id}">
-          <div class="c-item-icon" aria-hidden="true">${item.image}</div>
+          <div class="c-item-icon" aria-hidden="true">${auraStore.renderImage(item.image)}</div>
           <div class="c-item-info">
             <div class="c-item-name">${auraStore.escapeHTML(item.name)}</div>
             <div class="c-item-price">$${sub.toFixed(2)}</div>
@@ -190,37 +190,54 @@
       return;
     }
 
-    const total = cart.reduce((s, i) => s + (parseFloat(i.price) * i.quantity), 0);
+    const btn = elements.checkoutBtn;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'PROCESANDO...';
+    }
 
-    // Save order with user info
-    const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
-    const newOrder = {
-      id: orderId,
-      items: [...cart],
-      total: total,
-      date: new Date().toISOString(),
-      status: 'Pendiente',
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      userName: currentUser.displayName || currentUser.email.split('@')[0]
-    };
-    const orders = auraStore.getOrders();
-    orders.push(newOrder);
-    await auraStore.saveOrders(orders, { awaitSync: true });
+    try {
+      const total = cart.reduce((s, i) => s + (parseFloat(i.price) * i.quantity), 0);
 
-    const orderItems = cart.map(i => `- ${i.quantity}x ${i.name} (SKU: ${i.id})`).join('\n');
-    const totalText = `\n\nTotal estimado: $${total.toFixed(2)}\nID Pedido: ${orderId}\nCliente: ${currentUser.email}`;
-    const msg = `¡Hola! Me gustaría hacer el siguiente pedido:\n\n${orderItems}${totalText}`;
-    
-    // Open WhatsApp with pre-filled message
-    const settings = auraStore.getSettings();
-    const phone = settings.whatsappPhone ? settings.whatsappPhone.replace(/\D/g, '') : '';
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
-    
-    auraStore.showToast('Pedido registrado y redirigiendo a WhatsApp... 🎉', 'success');
-    cart = [];
-    saveCart();
-    toggleCart();
+      // Save order with user info
+      const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+      const newOrder = {
+        id: orderId,
+        items: [...cart],
+        total: total,
+        date: new Date().toISOString(),
+        status: 'Pendiente',
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        userName: currentUser.displayName || currentUser.email.split('@')[0]
+      };
+      const orders = auraStore.getOrders();
+      orders.push(newOrder);
+      await auraStore.saveOrders(orders, { awaitSync: true });
+
+      const orderItems = cart.map(i => `- ${i.quantity}x ${i.name} (SKU: ${i.id})`).join('\n');
+      const totalText = `\n\nTotal estimado: $${total.toFixed(2)}\nID Pedido: ${orderId}\nCliente: ${currentUser.email}`;
+      const msg = `¡Hola! Me gustaría hacer el siguiente pedido:\n\n${orderItems}${totalText}`;
+      
+      // Open WhatsApp with pre-filled message
+      const settings = auraStore.getSettings();
+      const phone = settings.whatsappPhone ? settings.whatsappPhone.replace(/\D/g, '') : '';
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+      
+      auraStore.showToast('Pedido registrado y redirigiendo a WhatsApp... 🎉', 'success');
+      cart = [];
+      saveCart();
+      toggleCart();
+    } catch (err) {
+      console.error('Checkout error:', err);
+      auraStore.showToast('Error procesando el pedido.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
   };
 
   /* ══════════════════════════════════════════════
@@ -572,6 +589,52 @@
       }
     });
 
+    // Suggestion Form Submit
+    const sugForm = document.getElementById('suggestionForm');
+    if (sugForm) {
+      sugForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('sugName');
+        const emailInput = document.getElementById('sugEmail');
+        const msgInput = document.getElementById('sugMessage');
+        const btn = sugForm.querySelector('button');
+
+        if (!nameInput || !emailInput || !msgInput) return;
+
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const message = msgInput.value.trim();
+
+        if (!name || !email || !message) return;
+
+        const originalBtnText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'ENVIANDO...';
+
+        try {
+          const suggestions = auraStore.getSuggestions();
+          suggestions.push({
+            id: 'SUG-' + Date.now(),
+            name,
+            email,
+            message,
+            date: new Date().toISOString(),
+            status: 'new'
+          });
+          await auraStore.saveSuggestions(suggestions, { awaitSync: true });
+          
+          auraStore.showToast('¡Gracias por tus sugerencias! ✨', 'success');
+          sugForm.reset();
+        } catch (err) {
+          console.error('Suggestion error:', err);
+          auraStore.showToast('Error al enviar. Intenta de nuevo.', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalBtnText;
+        }
+      });
+    }
+
     // ── Admin inline events ──
     elements.adminToggle?.addEventListener('click', () => {
       elements.adminDrawer?.classList.toggle('open');
@@ -696,10 +759,10 @@
         category: document.getElementById('apCategory').value.trim() || 'General',
         description: document.getElementById('apDesc').value.trim(),
         price,
-        ...(!isNaN(oldPriceVal) && oldPriceVal > 0 && { oldPrice: oldPriceVal }),
         image: imageVal || '📦',
         badge: document.getElementById('apBadge').value.trim(),
       };
+      if (!isNaN(oldPriceVal) && oldPriceVal > 0) newProduct.oldPrice = oldPriceVal;
       
       products.push(newProduct);
       const ok = await auraStore.saveProducts(products);
@@ -762,8 +825,19 @@
   };
 
   // ── INITIALIZATION ──
+  const dismissSplash = () => {
+    const splash = document.getElementById('auraSplash');
+    if (splash) {
+      splash.classList.add('hidden');
+      // Remove from DOM after animation completes
+      setTimeout(() => splash.remove(), 700);
+    }
+  };
+
   const init = async () => {
     initElements();
+    
+    // init() now returns instantly (Phase 1 = localStorage only, no await on Firebase)
     await auraStore.init();
 
     // Listen for auth state — handles BOTH admin and user roles
@@ -809,6 +883,7 @@
 
     updateThemeUI(auraStore.getTheme());
 
+    // ── Render immediately from localStorage (instant) ──
     buildMarquee();
     renderProducts();
     renderReviews();
@@ -821,6 +896,17 @@
     initEventListeners();
     initAuthEvents();
     initReveals();
+
+    // ── Dismiss splash screen now that content is visible ──
+    dismissSplash();
+
+    // ── Re-render when Firebase sync completes with fresh data ──
+    auraStore._onSyncComplete = () => {
+      console.log('%c✦ AURA: Firebase data arrived, refreshing UI.', 'color: #b59b6d;');
+      renderProducts();
+      renderReviews();
+      renderCart();
+    };
   };
 
   if (document.readyState === 'loading') {

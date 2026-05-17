@@ -164,23 +164,10 @@ nav {
 .hero-cta:hover span svg { transform: translateX(5px); }
 
 /* ── FOOTER ── */
-
-.hero-cta span svg {
-  transition: transform 0.3s ease;
-}
-
-.hero-cta:hover span svg {
-  transform: translateX(5px);
-}
-
-/* ── FOOTER ── */
 footer {
   margin-top: 6rem;
   padding: 4rem 6rem;
   border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .footer-logo {
@@ -210,6 +197,79 @@ footer {
 
 .footer-links a:hover {
   color: var(--ink);
+}
+
+/* ── Footer Grid & Suggestion Form ── */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 3rem;
+  margin-bottom: 3rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.footer-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.footer-tagline {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 1rem;
+}
+
+.footer-links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.suggestion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sug-input {
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 0.8rem;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.sug-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.sug-textarea {
+  resize: none;
+}
+
+.sug-submit {
+  padding: 0.6rem;
+  background: var(--ink);
+  color: var(--bone);
+  border: none;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sug-submit:hover {
+  background: var(--accent-dark);
 }
 
 .footer-copy {
@@ -261,29 +321,7 @@ footer {
   transform: translateY(0);
 }
 
-/* ── ABOUT MODAL ── */
-.about-card {
-  background: var(--bone); width: 100%; max-width: 600px;
-  padding: 4rem; position: relative; border-radius: 2px;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.15);
-}
-.about-card .modal-close { position: absolute; top: 2rem; right: 2rem; }
-.about-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 3rem; font-weight: 300; margin-bottom: 2rem;
-}
-.about-text {
-  font-size: 1rem; line-height: 1.8; color: var(--muted);
-  margin-bottom: 3rem;
-}
-.about-footer {
-  display: flex; gap: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);
-}
-.about-stat strong {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 2.2rem; font-weight: 300; display: block;
-}
-.about-stat span { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+/* NOTE: About modal styles are defined above (lines ~131-152). Duplicates removed. */
 
 /* ── RESPONSIVE ── */
 @media(max-width: 900px) {

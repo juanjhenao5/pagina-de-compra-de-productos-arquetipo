@@ -274,8 +274,8 @@
         <td style="font-weight: 600;">$${parseFloat(p.price).toFixed(2)}${p.oldPrice ? `<br><del style="font-size:0.75rem;color:var(--muted);font-weight:400;">$${parseFloat(p.oldPrice).toFixed(2)}</del>` : ''}</td>
         <td>${p.badge ? `<span class="badge-pill" style="background:var(--accent);color:white;font-size:0.65rem;padding:0.2rem 0.5rem;border-radius:2px;letter-spacing:0.05em;">${auraStore.escapeHTML(p.badge)}</span>` : '-'}</td>
         <td class="td-actions">
-          <button class="btn-edit" data-action="edit" title="Editar">✏</button>
-          <button class="btn-delete" data-action="delete" title="Eliminar">🗑</button>
+          <button class="btn-edit" data-action="edit" title="Editar" aria-label="Editar producto">✏</button>
+          <button class="btn-delete" data-action="delete" title="Eliminar" aria-label="Eliminar producto">🗑</button>
         </td>
       </tr>
     `}).join('');
@@ -436,7 +436,7 @@
       category: elements.fCategory?.value.trim() || 'General',
       description: elements.fDesc?.value.trim(),
       price,
-      ...(oldPrice !== null && { oldPrice }),
+      ...(oldPrice !== null && oldPrice > 0 ? { oldPrice } : {}),
       image: imageVal,
       badge: elements.fBadge?.value.trim(),
     };
@@ -695,7 +695,7 @@
     const orders = auraStore.getOrders();
     const completed = orders.filter(o => o.status === 'Completado');
 
-    const revenue = completed.reduce((sum, o) => sum + parseFloat(o.total), 0);
+    const revenue = completed.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     const count = completed.length;
     const avgTicket = count > 0 ? revenue / count : 0;
 
@@ -1023,6 +1023,27 @@
     firebase.auth().onAuthStateChanged(async (user) => {
       authStateDetermined = true;
       if (user) {
+        // ISO 27001 A.8.2: Verificar que el usuario es admin en Firestore
+        let isAdmin = false;
+        if (window.firebaseDB) {
+          try {
+            const adminDoc = await window.firebaseDB.collection('admins').doc(user.uid).get();
+            isAdmin = adminDoc.exists;
+          } catch (e) {
+            console.warn('Admin verification failed:', e.message);
+            isAdmin = false;
+          }
+        }
+
+        if (!isAdmin) {
+          console.warn('User is not an admin:', user.email);
+          if (elements.loginError) {
+            elements.loginError.textContent = 'No tienes permisos de administrador.';
+          }
+          await firebase.auth().signOut();
+          return;
+        }
+
         console.log("Admin session active:", user.email);
         elements.loginScreen?.classList.remove('active');
 

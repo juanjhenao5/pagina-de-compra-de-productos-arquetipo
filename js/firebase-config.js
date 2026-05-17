@@ -11,6 +11,11 @@
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// 
+// ⚠️ ISO/IEC 27001 A.8.9: Esta API key es pública por diseño en Firebase,
+// pero DEBE configurarse con restricciones de dominio en Firebase Console:
+// https://console.cloud.google.com/apis/credentials
+// Restringir a los dominios autorizados de producción y desarrollo.
 const firebaseConfig = {
   apiKey: "AIzaSyC_Jyl5J_G5yLLtOTSi1zQXiq2JqQ4NU1k",
   authDomain: "aura-prueba.firebaseapp.com",
