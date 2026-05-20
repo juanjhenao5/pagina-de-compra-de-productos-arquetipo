@@ -53,6 +53,7 @@
                             <h3>AURA Assistant</h3>
                             <p>En línea • Soporte Premium</p>
                         </div>
+                        <button class="assistant-close-btn" id="assistantClose" aria-label="Cerrar asistente">✕</button>
                     </div>
                     <div class="assistant-messages" id="assistantMessages">
                         <!-- Messages go here -->
@@ -99,6 +100,9 @@
 
     const addEventListeners = () => {
         fab.addEventListener('click', toggleAssistant);
+
+        // Close button in header
+        document.getElementById('assistantClose')?.addEventListener('click', toggleAssistant);
         
         sendBtn.addEventListener('click', () => {
             const text = input.value.trim();
@@ -118,6 +122,21 @@
                 toggleAssistant();
             }
         });
+
+        // Event delegation for dynamic add-to-cart buttons in chat messages
+        messagesArea.addEventListener('click', (e) => {
+            const btn = e.target.closest('.assistant-add-to-cart-btn');
+            if (btn) {
+                const id = btn.dataset.id;
+                if (window.auraAddToCart) {
+                    window.auraAddToCart(id);
+                    btn.textContent = '✓ Listo';
+                    btn.disabled = true;
+                    btn.style.borderColor = 'var(--border)';
+                    btn.style.color = 'var(--muted)';
+                }
+            }
+        });
     };
 
     const toggleAssistant = () => {
@@ -130,10 +149,18 @@
         }
     };
 
-    const addMessage = (type, text) => {
+    const addMessage = (type, text, raw = false) => {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${type}`;
-        msgDiv.textContent = text;
+        // Use textContent for user messages (XSS-safe)
+        if (type === 'user') {
+            msgDiv.textContent = text;
+        } else if (raw) {
+            // Raw HTML for bot messages with interactive elements (buttons, etc.)
+            msgDiv.innerHTML = text;
+        } else {
+            msgDiv.innerHTML = auraStore.escapeHTML(text).replace(/\n/g, '<br>');
+        }
         messagesArea.appendChild(msgDiv);
         messagesArea.scrollTop = messagesArea.scrollHeight;
         return msgDiv;
@@ -160,44 +187,70 @@
         }, 800);
     };
 
+    /** Normalize Spanish accented characters for better keyword matching */
+    const normalizeText = (text) => text.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
     const processResponse = (query) => {
+        const normalizedQuery = normalizeText(query);
+
+        // Special logic: Add to cart intent
+        if (normalizedQuery.includes('agrega') || normalizedQuery.includes('anade') || normalizedQuery.includes('quiero') || normalizedQuery.includes('comprar')) {
+            const products = auraStore.getProducts();
+            let foundProduct = null;
+            
+            for (const p of products) {
+                if (normalizedQuery.includes(normalizeText(p.name))) {
+                    foundProduct = p;
+                    break;
+                }
+            }
+
+            if (foundProduct) {
+                if (window.auraAddToCart) {
+                    window.auraAddToCart(foundProduct.id);
+                    addMessage('bot', `¡Listo! He añadido <strong>${auraStore.escapeHTML(foundProduct.name)}</strong> a tu carrito. 🛒`, true);
+                    return;
+                }
+            }
+        }
+
         // Special logic for product listing
-        if (query.includes("producto") || query.includes("catálogo") || query.includes("vender") || query.includes("comprar")) {
+        if (normalizedQuery.includes('producto') || normalizedQuery.includes('catalogo') || normalizedQuery.includes('que hay') || normalizedQuery.includes('tienda') || normalizedQuery.includes('vender')) {
             const products = auraStore.getProducts();
             if (products.length > 0) {
-                const topProducts = products.slice(0, 3).map(p => `• ${p.name} ($${parseFloat(p.price).toFixed(2)})`).join('\n');
-                addMessage("bot", `¡Claro! Estos son algunos de nuestros productos más destacados:\n\n${topProducts}\n\n¿Te gustaría ver más? Puedes explorar la sección de productos abajo.`);
+                const topProducts = products.slice(0, 5).map(p => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,0.15);"><span><strong>${auraStore.escapeHTML(p.name)}</strong><br><span style="font-size:0.8rem;color:var(--accent);">$${parseFloat(p.price).toFixed(2)}</span></span><button class="action-btn assistant-add-to-cart-btn" data-id="${auraStore.escapeHTML(p.id)}" style="padding:5px 10px;font-size:0.75rem;white-space:nowrap;">🛒 Agregar</button></div>`).join('');
+                addMessage('bot', `¡Claro! Esto es lo que tenemos:<br><br>${topProducts}<br>Escríbeme <em>"agrega [nombre]"</em> o haz clic en los botones.`, true);
             } else {
-                addMessage("bot", "Actualmente estamos renovando nuestro catálogo. ¡Vuelve pronto para ver las novedades!");
+                addMessage('bot', 'Actualmente estamos renovando nuestro catálogo. ¡Vuelve pronto para ver las novedades!');
             }
             return;
         }
 
         // Special logic for cart
-        if (query.includes("carrito") || query.includes("comprado") || query.includes("mi pedido")) {
+        if (normalizedQuery.includes('carrito') || normalizedQuery.includes('comprado') || normalizedQuery.includes('mi pedido')) {
             const cart = auraStore.getCart();
             if (cart.length > 0) {
-                const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-                addMessage("bot", `Tienes ${cart.length} productos en tu carrito. El total actual es de $${total.toFixed(2)}.\n\n¿Deseas finalizar tu compra? Haz clic en el botón 'Carrito' arriba a la derecha.`);
+                const total = cart.reduce((s, i) => s + (parseFloat(i.price) * i.quantity), 0);
+                addMessage('bot', `Tienes ${cart.length} producto${cart.length !== 1 ? 's' : ''} en tu carrito. El total actual es de $${total.toFixed(2)}.\n\n¿Deseas finalizar tu compra? Haz clic en el botón 'Carrito' arriba a la derecha.`);
             } else {
-                addMessage("bot", "Tu carrito está vacío. ¡Es un buen momento para añadir algo especial!");
+                addMessage('bot', 'Tu carrito está vacío. ¡Es un buen momento para añadir algo especial!');
             }
             return;
         }
 
-        // Keyword matching
+        // Keyword matching (accent-insensitive)
         let found = false;
-        const normalizedQuery = query.toLowerCase();
         for (const key in botResponses) {
-            if (normalizedQuery.includes(key)) {
-                addMessage("bot", botResponses[key]);
+            if (normalizedQuery.includes(normalizeText(key))) {
+                addMessage('bot', botResponses[key]);
                 found = true;
                 break;
             }
         }
 
         if (!found) {
-            addMessage("bot", "Lo siento, no tengo una respuesta específica para eso. ¿Podrías intentar con palabras clave como 'envío', 'productos' o 'garantía'?");
+            addMessage('bot', 'No tengo una respuesta específica para eso. Puedes preguntarme sobre:\n\n• Envíos y entregas\n• Garantía y devoluciones\n• Métodos de pago\n• Nuestros productos\n• Tu carrito de compras');
         }
     };
 

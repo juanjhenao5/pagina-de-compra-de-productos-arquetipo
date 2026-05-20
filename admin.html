@@ -9,7 +9,7 @@
 
   <!-- ISO/IEC 27001 & ISO/IEC 27034: Implementación de Content Security Policy (CSP) para prevenir ataques XSS -->
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://firestore.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com https://www.gstatic.com;" />
+    content="default-src *; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src *;" />
 
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -358,7 +358,7 @@
         <span class="icon">💬</span><span>Testimonios</span>
       </button>
       <button class="nav-item" data-panel="orders">
-        <span class="icon">🛒</span><span>Pedidos</span>
+        <span class="icon">🛒</span><span>Pedidos</span><span class="nav-badge" id="pendingOrdersBadge" style="display:none;"></span>
       </button>
       <button class="nav-item" data-panel="sales">
         <span class="icon">💸</span><span>Ventas</span>
@@ -504,14 +504,24 @@
       <section class="panel" id="panelOrders">
         <div class="section-bar">
           <h2 class="section-bar-title">Gestión de Pedidos</h2>
+          <div style="display:flex; gap:1rem; align-items:center;">
+            <span id="ordersFilterInfo" style="font-size:0.78rem; color:var(--muted);"></span>
+            <select id="ordersFilterStatus" class="form-input" style="max-width:170px; padding:0.5rem 0.8rem; font-size:0.8rem; border-radius:6px;">
+              <option value="">Todos los estados</option>
+              <option value="Pendiente">🟡 Pendientes</option>
+              <option value="Completado">🟢 Completados</option>
+              <option value="Cancelado">🔴 Cancelados</option>
+            </select>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>ID Pedido</th>
+                <th style="width:55px">#</th>
+                <th>Pedido</th>
                 <th>Cliente</th>
-                <th>Fecha</th>
+                <th>Tiempo</th>
                 <th>Total</th>
                 <th>Estado</th>
                 <th style="width:180px">Acciones</th>

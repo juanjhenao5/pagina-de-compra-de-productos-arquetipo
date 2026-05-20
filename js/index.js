@@ -134,6 +134,9 @@
     saveCart();
     auraStore.showToast(`${product.name} agregado ✓`);
   };
+  
+  // Export for assistant.js
+  window.auraAddToCart = addToCart;
 
   // ── ACCESSIBILITY ──
   const trapFocus = (e, container) => {
@@ -200,10 +203,25 @@
     try {
       const total = cart.reduce((s, i) => s + (parseFloat(i.price) * i.quantity), 0);
 
+      // Validate WhatsApp phone before proceeding
+      const settings = auraStore.getSettings();
+      const phone = settings.whatsappPhone ? settings.whatsappPhone.replace(/\D/g, '') : '';
+      if (!phone || phone.length < 7) {
+        auraStore.showToast('Error: La tienda no tiene un número de WhatsApp configurado. Contacta al administrador.', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = originalText; }
+        return;
+      }
+
+      // Calculate sequential queue number
+      const existingOrders = auraStore.getOrders();
+      const maxQueue = existingOrders.reduce((max, o) => Math.max(max, o.queueNumber || 0), 0);
+      const queueNumber = maxQueue + 1;
+
       // Save order with user info
       const orderId = 'ORD-' + Math.floor(100000 + Math.random() * 900000);
       const newOrder = {
         id: orderId,
+        queueNumber: queueNumber,
         items: [...cart],
         total: total,
         date: new Date().toISOString(),
@@ -212,20 +230,17 @@
         userEmail: currentUser.email,
         userName: currentUser.displayName || currentUser.email.split('@')[0]
       };
-      const orders = auraStore.getOrders();
-      orders.push(newOrder);
-      await auraStore.saveOrders(orders, { awaitSync: true });
+      existingOrders.push(newOrder);
+      await auraStore.saveOrders(existingOrders, { awaitSync: true });
 
       const orderItems = cart.map(i => `- ${i.quantity}x ${i.name} (SKU: ${i.id})`).join('\n');
-      const totalText = `\n\nTotal estimado: $${total.toFixed(2)}\nID Pedido: ${orderId}\nCliente: ${currentUser.email}`;
+      const totalText = `\n\nTotal estimado: $${total.toFixed(2)}\nPedido #${queueNumber} (${orderId})\nCliente: ${currentUser.email}`;
       const msg = `¡Hola! Me gustaría hacer el siguiente pedido:\n\n${orderItems}${totalText}`;
       
       // Open WhatsApp with pre-filled message
-      const settings = auraStore.getSettings();
-      const phone = settings.whatsappPhone ? settings.whatsappPhone.replace(/\D/g, '') : '';
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
       
-      auraStore.showToast('Pedido registrado y redirigiendo a WhatsApp... 🎉', 'success');
+      auraStore.showToast(`Pedido #${queueNumber} registrado — redirigiendo a WhatsApp 🎉`, 'success');
       cart = [];
       saveCart();
       toggleCart();
@@ -364,7 +379,16 @@
     document.getElementById('btnUserLogout')?.addEventListener('click', async (e) => {
       e.stopPropagation();
       try {
+        // CRITICAL: cleanup MUST happen first to stop all Firebase operations
+        auraStore.cleanup();
+        // Give cleanup a critical moment to take effect before calling signOut
+        await new Promise(r => setTimeout(r, 150));
         await firebase.auth().signOut();
+        // Clear state
+        currentUser = null;
+        // Close modals
+        closeAuthModal();
+        elements.userDropdown?.classList.remove('open');
         auraStore.showToast('Sesión cerrada', 'success');
       } catch (err) { console.error(err); }
     });
@@ -392,6 +416,8 @@
       errEl.textContent = '';
       try {
         await firebase.auth().signInWithEmailAndPassword(email, pass);
+        // Reinitialize Firebase after successful login
+        auraStore.reinit();
         closeAuthModal();
         auraStore.showToast('¡Bienvenido de vuelta! ✓', 'success');
       } catch (error) {
@@ -413,6 +439,8 @@
       try {
         const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
         await cred.user.updateProfile({ displayName: name });
+        // Reinitialize Firebase after successful signup
+        auraStore.reinit();
         closeAuthModal();
         auraStore.showToast(`¡Bienvenido, ${name}! Tu cuenta ha sido creada ✓`, 'success');
       } catch (error) {
@@ -621,7 +649,7 @@
             date: new Date().toISOString(),
             status: 'new'
           });
-          await auraStore.saveSuggestions(suggestions, { awaitSync: true });
+          await auraStore.saveSuggestions(suggestions);
           
           auraStore.showToast('¡Gracias por tus sugerencias! ✨', 'success');
           sugForm.reset();
@@ -802,26 +830,6 @@
       }
     });
 
-    // ── Suggestion Form ──
-    document.getElementById('suggestionForm')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('sugName').value.trim();
-      const email = document.getElementById('sugEmail').value.trim();
-      const message = document.getElementById('sugMessage').value.trim();
-
-      const suggestions = auraStore.getSuggestions();
-      suggestions.push({
-        id: 'SUG-' + Date.now(),
-        name,
-        email,
-        message,
-        date: new Date().toISOString()
-      });
-
-      await auraStore.saveSuggestions(suggestions);
-      auraStore.showToast('¡Gracias por tu sugerencia! ✓', 'success');
-      e.target.reset();
-    });
   };
 
   // ── INITIALIZATION ──
@@ -842,6 +850,9 @@
 
     // Listen for auth state — handles BOTH admin and user roles
     firebase.auth().onAuthStateChanged(async (user) => {
+      // Update current user state
+      currentUser = user;
+      
       // Check if user is admin (by checking Firestore admins collection)
       window._isAdminUser = false;
       if (user && window.firebaseDB) {
@@ -862,12 +873,25 @@
 
       // User UI
       updateUserUI(user);
+      
+      // If user logged out, close any open modals
+      if (!user) {
+        closeAuthModal();
+        elements.userDropdown?.classList.remove('open');
+      }
+      
       renderProducts(); // Re-render to show/hide admin delete buttons
     });
 
     // Main Admin Logout Button
-    document.getElementById('btnMainLogout')?.addEventListener('click', () => {
+    document.getElementById('btnMainLogout')?.addEventListener('click', async () => {
+      // CRITICAL: cleanup MUST happen first to stop all Firebase operations
+      auraStore.cleanup();
+      // Give cleanup a critical moment to take effect before calling signOut
+      await new Promise(r => setTimeout(r, 150));
       firebase.auth().signOut().then(() => {
+        // Clear state
+        currentUser = null;
         auraStore.showToast('Sesión cerrada', 'success');
       });
     });

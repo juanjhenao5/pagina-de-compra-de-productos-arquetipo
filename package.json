@@ -1,0 +1,24 @@
+{
+  "name": "aura-store",
+  "version": "1.0.0",
+  "description": "AURA Store - Tecnología con Propósito. Portal e-commerce minimalista y premium.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "serve": "npx http-server -p 8080 -c-1",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "aura",
+    "ecommerce",
+    "minimalist",
+    "vanilla-js",
+    "firebase"
+  ],
+  "author": "AURA Team",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^5.2.11"
+  }
+}

@@ -23,6 +23,7 @@ const auraIcons = {
 const auraStore = (() => {
   let db = null;
   let firebaseActive = false;
+  let abortController = new AbortController(); // Control para cancelar operaciones Firebase
 
   const DEFAULT_PRODUCTS = [];
 
@@ -290,6 +291,7 @@ const auraStore = (() => {
       if (firebaseActive) {
         (async () => {
           try {
+            if (abortController.signal.aborted || !firebaseActive) return;
             const previousIds = new Set(previous.map(r => r.id.toString()));
             const newIds = new Set(normalized.map(r => r.id));
             const deletedIds = [...previousIds].filter(id => !newIds.has(id));
@@ -302,8 +304,10 @@ const auraStore = (() => {
             deletedIds.forEach(id => {
               batch.delete(db.collection('reviews').doc(id));
             });
+            if (abortController.signal.aborted || !firebaseActive) return;
             await withTimeout(batch.commit(), 5000);
           } catch (e) {
+            if (abortController.signal.aborted || !firebaseActive) return;
             console.warn("Firebase reviews sync failed:", e.message);
           }
         })();
@@ -322,6 +326,7 @@ const auraStore = (() => {
       if (firebaseActive) {
         const doSync = async () => {
           try {
+            if (abortController.signal.aborted || !firebaseActive) return;
             const previousIds = new Set(previous.map(o => o.id.toString()));
             const newIds = new Set(normalized.map(o => o.id));
             const deletedIds = [...previousIds].filter(id => !newIds.has(id));
@@ -334,9 +339,11 @@ const auraStore = (() => {
             deletedIds.forEach(id => {
               batch.delete(db.collection('orders').doc(id));
             });
+            if (abortController.signal.aborted || !firebaseActive) return;
             await withTimeout(batch.commit(), 8000);
             console.log('✦ Pedidos sincronizados con Firebase');
           } catch (e) {
+            if (abortController.signal.aborted || !firebaseActive) return;
             console.warn("Firebase orders sync failed:", e.message);
             showToast('Pedido guardado localmente. Se sincronizará después.', 'error');
           }
@@ -362,14 +369,19 @@ const auraStore = (() => {
       if (firebaseActive) {
         (async () => {
           try {
+            if (abortController.signal.aborted || !firebaseActive) return;
             const prevIds = new Set(previous.map(s => s.id.toString()));
             const newIds = new Set(normalized.map(s => s.id));
             const delIds = [...prevIds].filter(id => !newIds.has(id));
             const batch = db.batch();
             normalized.forEach(s => batch.set(db.collection('suggestions').doc(s.id), s));
             delIds.forEach(id => batch.delete(db.collection('suggestions').doc(id)));
+            if (abortController.signal.aborted || !firebaseActive) return;
             await withTimeout(batch.commit(), 5000);
-          } catch (e) { console.warn("Firebase suggestions sync failed:", e.message); }
+          } catch (e) { 
+            if (abortController.signal.aborted || !firebaseActive) return;
+            console.warn("Firebase suggestions sync failed:", e.message); 
+          }
         })();
       }
       return true;
@@ -403,6 +415,8 @@ const auraStore = (() => {
         // Run Firebase sync without blocking the UI
         (async () => {
           try {
+            if (abortController.signal.aborted || !firebaseActive) return; // Abort if logout happened or Firebase disabled
+            
             // Detect which products were deleted by comparing with previous state
             const previousIds = new Set(previousProducts.map(p => p.id.toString()));
             const newIds = new Set(normalizedProducts.map(p => p.id));
@@ -419,9 +433,11 @@ const auraStore = (() => {
               batch.delete(db.collection('products').doc(id));
             });
 
+            if (abortController.signal.aborted || !firebaseActive) return; // Final check before commit
             await withTimeout(batch.commit(), 5000);
             console.log('✦ Firebase sync OK');
           } catch (e) {
+            if (abortController.signal.aborted || !firebaseActive) return; // Ignore errors if aborted or Firebase disabled
             console.warn("Firebase sync failed (data saved locally):", e.message);
             // Data is already in localStorage, so the user won't lose anything
           }
@@ -531,6 +547,22 @@ const auraStore = (() => {
         return `<img src="${safeUrl}" alt="Producto" style="width:100%;height:100%;object-fit:contain;border-radius:4px;" onerror="this.outerHTML='📦'" />`;
       }
       return img;
+    },
+
+    // Cleanup on logout: abort all pending Firebase operations
+    cleanup: () => {
+      // Immediately stop all Firebase activity
+      firebaseActive = false;
+      abortController.abort();
+      console.log('%c✦ AURA Store: Cleanup complete, Firebase sync aborted.', 'color: #b59b6d;');
+    },
+
+    // Reinitialize for new login
+    reinit: async () => {
+      abortController = new AbortController();
+      firebaseActive = false; // Reset state
+      initFirebase();
+      console.log('%c✦ AURA Store: Reinitialized for new session.', 'color: #b59b6d;');
     }
   };
 })();

@@ -147,7 +147,7 @@
     );
     if (key === 'dashboard') renderDashboard();
     if (key === 'reviews') renderReviewsTable();
-    if (key === 'orders') renderOrdersTable();
+    if (key === 'orders') renderOrdersTable(document.getElementById('ordersFilterStatus')?.value || '');
     if (key === 'sales') renderSalesDashboard();
     if (key === 'suggestions') renderSuggestionsTable();
   };
@@ -202,6 +202,7 @@
   ══════════════════════════════════════════════ */
   const renderDashboard = () => {
     updateStats();
+    updatePendingBadge();
     const products = auraStore.getProducts();
 
     if (elements.activityFeed) {
@@ -594,36 +595,120 @@
   /* ══════════════════════════════════════════════
      ORDERS CRUD
   ══════════════════════════════════════════════ */
-  const renderOrdersTable = () => {
+
+  /** Returns a human-readable relative time string */
+  const timeAgo = (dateStr) => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
+
+    if (diffMin < 1) return 'Justo ahora';
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    if (diffHr < 24) return `hace ${diffHr}h`;
+    if (diffDay < 7) return `hace ${diffDay}d`;
+    return new Date(dateStr).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+  };
+
+  /** Returns urgency level based on how old a pending order is */
+  const getUrgencyClass = (dateStr, status) => {
+    if (status !== 'Pendiente') return '';
+    const diffHr = (new Date() - new Date(dateStr)) / 3600000;
+    if (diffHr > 24) return 'order-urgent';
+    if (diffHr > 4) return 'order-warning';
+    return 'order-new';
+  };
+
+  /** Updates the pending orders badge in sidebar */
+  const updatePendingBadge = () => {
+    const badge = document.getElementById('pendingOrdersBadge');
+    if (!badge) return;
+    const pending = allOrders.filter(o => o.status === 'Pendiente').length;
+    if (pending > 0) {
+      badge.textContent = pending;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  };
+
+  const renderOrdersTable = (filterStatus = '') => {
     allOrders = auraStore.getOrders();
-    const orders = allOrders;
     const tbody = elements.ordersTable;
     if (!tbody) return;
 
+    updatePendingBadge();
+
+    // Apply status filter
+    const orders = filterStatus 
+      ? allOrders.filter(o => o.status === filterStatus)
+      : allOrders;
+
+    // Update filter info
+    const infoEl = document.getElementById('ordersFilterInfo');
+    const pendingCount = allOrders.filter(o => o.status === 'Pendiente').length;
+    if (infoEl) {
+      infoEl.textContent = `${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''} · ${allOrders.length} total`;
+    }
+
     if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="6"><div class="table-empty"><span>🛒</span>No hay pedidos registrados.</div></td></tr>`;
+      const emptyMsg = filterStatus 
+        ? `No hay pedidos con estado "${filterStatus}".`
+        : 'No hay pedidos registrados.';
+      tbody.innerHTML = `<tr><td colspan="7"><div class="table-empty"><span>🛒</span>${emptyMsg}</div></td></tr>`;
       return;
     }
 
-    const sorted = [...orders].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort: Pending orders first (oldest first = FIFO), then completed/cancelled (newest first)
+    const sorted = [...orders].sort((a, b) => {
+      if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
+      if (a.status !== 'Pendiente' && b.status === 'Pendiente') return 1;
+      if (a.status === 'Pendiente' && b.status === 'Pendiente') {
+        // FIFO: oldest first (by queue number, then by date)
+        return (a.queueNumber || 0) - (b.queueNumber || 0);
+      }
+      // Non-pending: newest first
+      return new Date(b.date) - new Date(a.date);
+    });
 
     tbody.innerHTML = sorted.map(o => {
       const dateStr = new Date(o.date).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const clientName = o.userName || o.userEmail || 'Anónimo';
+      const urgency = getUrgencyClass(o.date, o.status);
+      const qNum = o.queueNumber || '—';
+      const elapsed = timeAgo(o.date);
+
+      const statusColors = {
+        'Pendiente': 'background:rgba(243,156,18,0.1); color:#e67e22; border:1px solid rgba(243,156,18,0.2);',
+        'Completado': 'background:rgba(45,158,107,0.1); color:#2d9e6b; border:1px solid rgba(45,158,107,0.2);',
+        'Cancelado': 'background:rgba(192,57,43,0.1); color:#c0392b; border:1px solid rgba(192,57,43,0.2);'
+      };
+
       return `
-      <tr data-id="${o.id}">
-        <td style="font-weight: 500;">${auraStore.escapeHTML(o.id)}</td>
+      <tr data-id="${o.id}" class="${urgency}">
+        <td>
+          <span class="queue-number" title="Número de cola">${qNum}</span>
+        </td>
+        <td>
+          <div style="font-weight:600;font-size:0.82rem;letter-spacing:0.02em;">${auraStore.escapeHTML(o.id)}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:0.15rem;">${o.items.length} producto${o.items.length !== 1 ? 's' : ''}</div>
+        </td>
         <td>
           <div style="font-weight:500;font-size:0.85rem;">${auraStore.escapeHTML(clientName)}</div>
-          ${o.userEmail ? `<div style="font-size:0.7rem;color:var(--muted);">${auraStore.escapeHTML(o.userEmail)}</div>` : ''}
+          ${o.userEmail ? `<div style="font-size:0.68rem;color:var(--muted);">${auraStore.escapeHTML(o.userEmail)}</div>` : ''}
         </td>
-        <td style="font-size: 0.8rem; color: var(--muted);">${dateStr}</td>
-        <td style="font-weight: 600;">$${parseFloat(o.total).toFixed(2)}</td>
         <td>
-          <select class="form-input" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; min-width: 110px;" data-action="change-status">
-            <option value="Pendiente" ${o.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-            <option value="Completado" ${o.status === 'Completado' ? 'selected' : ''}>Completado</option>
-            <option value="Cancelado" ${o.status === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+          <div style="font-weight:500;font-size:0.82rem;">${elapsed}</div>
+          <div style="font-size:0.65rem;color:var(--muted);" title="${dateStr}">${dateStr}</div>
+        </td>
+        <td style="font-weight: 600; font-size: 1rem; font-family:'Cormorant Garamond', serif;">$${parseFloat(o.total).toFixed(2)}</td>
+        <td>
+          <select class="form-input order-status-select" style="padding:0.35rem 0.5rem; font-size:0.78rem; min-width:120px; border-radius:6px; font-weight:600; ${statusColors[o.status] || ''}" data-action="change-status">
+            <option value="Pendiente" ${o.status === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+            <option value="Completado" ${o.status === 'Completado' ? 'selected' : ''}>✅ Completado</option>
+            <option value="Cancelado" ${o.status === 'Cancelado' ? 'selected' : ''}>❌ Cancelado</option>
           </select>
         </td>
         <td class="td-actions">
@@ -640,7 +725,9 @@
     if (idx > -1) {
       orders[idx].status = status;
       await auraStore.saveOrders(orders);
-      auraStore.showToast('Estado actualizado', 'success');
+      // Re-render to update sorting, badge, and visual state
+      renderOrdersTable(document.getElementById('ordersFilterStatus')?.value || '');
+      auraStore.showToast(`Pedido ${status === 'Completado' ? 'completado ✅' : status === 'Cancelado' ? 'cancelado' : 'marcado como pendiente'}`, 'success');
     }
   };
 
@@ -648,7 +735,7 @@
     if (!confirm('¿Eliminar este pedido permanentemente?')) return;
     const orders = auraStore.getOrders().filter(o => o.id !== id);
     await auraStore.saveOrders(orders);
-    renderOrdersTable();
+    renderOrdersTable(document.getElementById('ordersFilterStatus')?.value || '');
     auraStore.showToast('Pedido eliminado ✓', 'success');
   };
 
@@ -656,7 +743,8 @@
     const order = allOrders.find(o => o.id === id);
     if (!order) return;
 
-    if (elements.orderModalTitle) elements.orderModalTitle.textContent = `Pedido ${order.id}`;
+    const queueLabel = order.queueNumber ? `Pedido #${order.queueNumber}` : `Pedido ${order.id}`;
+    if (elements.orderModalTitle) elements.orderModalTitle.textContent = queueLabel;
 
     const itemsHtml = order.items.map(i => `
       <div style="display:flex; justify-content:space-between; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--border);">
@@ -665,17 +753,36 @@
       </div>
     `).join('');
 
+    const statusColor = order.status === 'Completado' ? '#2d9e6b' : order.status === 'Cancelado' ? '#c0392b' : '#e67e22';
+
     if (elements.orderModalBody) {
       elements.orderModalBody.innerHTML = `
-        <div style="margin-bottom: 1rem;">
-          <span style="color:var(--muted); font-size:0.8rem;">Fecha:</span> ${new Date(order.date).toLocaleString()}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; padding:1rem; background:var(--cream); border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.2rem;">N° de Cola</div>
+            <div style="font-size:1.6rem; font-weight:700; font-family:'Cormorant Garamond', serif;">#${order.queueNumber || '—'}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.2rem;">Estado</div>
+            <div style="font-size:0.85rem; font-weight:600; color:${statusColor};">${order.status || 'Pendiente'}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.2rem;">Fecha</div>
+            <div style="font-size:0.85rem;">${new Date(order.date).toLocaleString('es-CO')}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.2rem;">Tiempo</div>
+            <div style="font-size:0.85rem; font-weight:500;">${timeAgo(order.date)}</div>
+          </div>
         </div>
-        <div style="margin-bottom: 1rem;">
-          <span style="color:var(--muted); font-size:0.8rem;">Estado:</span> <strong style="color:var(--accent);">${order.status}</strong>
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.2rem;">Cliente</div>
+          <div style="font-weight:500;">${auraStore.escapeHTML(order.userName || 'Anónimo')}</div>
+          ${order.userEmail ? `<div style="font-size:0.8rem; color:var(--muted);">${auraStore.escapeHTML(order.userEmail)}</div>` : ''}
         </div>
-        <h4 style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem;">Productos</h4>
+        <h4 style="margin-bottom: 0.8rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);">Productos</h4>
         ${itemsHtml}
-        <div style="text-align: right; font-size: 1.1rem; font-weight: 600; margin-top: 1rem;">
+        <div style="text-align: right; font-size: 1.3rem; font-weight: 600; margin-top: 1rem; font-family:'Cormorant Garamond', serif; color:var(--accent-dark);">
           Total: $${parseFloat(order.total).toFixed(2)}
         </div>
       `;
@@ -873,6 +980,11 @@
       }
     });
 
+    // ── Orders filter ──
+    document.getElementById('ordersFilterStatus')?.addEventListener('change', e => {
+      renderOrdersTable(e.target.value);
+    });
+
     document.getElementById('orderModalCloseBtn')?.addEventListener('click', closeOrderModal);
     document.getElementById('btnCancelOrderModal')?.addEventListener('click', closeOrderModal);
     document.getElementById('orderModalOverlay')?.addEventListener('click', e => {
@@ -964,6 +1076,8 @@
 
       try {
         await firebase.auth().signInWithEmailAndPassword(email, pass);
+        // Reinitialize Firebase for admin session
+        auraStore.reinit();
       } catch (error) {
         console.error("Login error:", error);
         btn.disabled = false;
@@ -989,6 +1103,8 @@
     // ── Logout ──
     elements.btnLogout?.addEventListener('click', async () => {
       try {
+        auraStore.cleanup();
+        await new Promise(r => setTimeout(r, 100));
         await firebase.auth().signOut();
         auraStore.showToast('Sesión cerrada correctamente', 'success');
       } catch (error) {
@@ -1040,6 +1156,8 @@
           if (elements.loginError) {
             elements.loginError.textContent = 'No tienes permisos de administrador.';
           }
+          auraStore.cleanup();
+          await new Promise(r => setTimeout(r, 100));
           await firebase.auth().signOut();
           return;
         }
